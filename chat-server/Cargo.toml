@@ -1,16 +1,17 @@
 [package]
-name = "rocket_chat"
+name = "friends_os"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rocket = { version = "0.5.0", features = ["secrets", "json"] }
+rocket = { version = "0.5.0", features = ["json"] }
 rocket_contrib = "0.4.11"
 ws = { package = "rocket_ws", version = "0.1.0" }
 serde = "1.0.197"
 rand = "0.8.5"
+rocket_cors = { version = "0.6.0", default-features = false }
 
 [dev-dependencies]
 rand = "0.8.5"

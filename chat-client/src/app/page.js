@@ -1,41 +1,63 @@
 'use client'
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 function Chat() {
-    const [username, setUsername] = useState('Bill');
+    const [connectedStatus, setConnectedStatus] = useState(false);
+    const [retryTime, setRetryTime] = useState(1);
+    const eventsRef = useRef(null);
+    const [username, setUsername] = useState('Guest');
     const [message, setMessage] = useState('');
     const [newRoom, setNewRoom] = useState('');
-
+    // STate should be seeded with up to date records on first load. This will happen when we save chats to server state or db
     const [state, setState] = useState({
         room: "lobby",
         rooms: [{ name: "lobby", messages: [] }],
         connected: false,
     });
-    // I think what I am missing is a subscribe mechanism to keep updates consistence across clients
-    useEffect(() => {
+   
+    const connect = () => {
         const eventSource = new EventSource('http://127.0.0.1:8000/events');
    
         eventSource.onmessage = (event) => {
-        let newMessage;
-        try {
-            newMessage = JSON.parse(event.data);
-        } catch (error) {
-            console.log(error);
-        }
+            let newMessage;
+            try {
+                newMessage = JSON.parse(event.data);
+              
+                const updatedRoom = state.rooms.find(room => room.name === newMessage.room);
+            
+                if (updatedRoom) {
+                    const setStates = (update) => setState({ ...state, ...update });
 
-        const updatedRoom = state.rooms.find(room => room.name === newMessage.room);
-        console.log(updatedRoom)
- 
-        if (updatedRoom) {
-            const newRooms = state.rooms.map( room =>
-            room.name === newMessage.room ? { ...room, messages: [...room.messages, newMessage] } : room
-            );
-            setState({ ...state, rooms: newRooms });
-        }
+                    setStates({
+                        rooms: state.rooms.map((room) =>
+                            room.name === newMessage.room ? { ...room, messages: [...room.messages, newMessage] } : room
+                        ),
+                    });
+                }
+            } catch (error) {
+                console.log(error);
+            }
         };
-        console.log(state.rooms);
 
-    }, [state]);
+        eventSource.onopen = () => {
+            setConnectedStatus(true);
+            setRetryTime(1);
+        };
+    
+        eventSource.onerror = () => {
+            setConnectedStatus(false);
+            eventSource.close();
+            const timeout = Math.min(64, retryTime * 2);
+            setRetryTime(timeout);
+            setTimeout(connect, timeout * 1000);
+        };
+    
+        eventsRef.current = eventSource;
+    }
+
+    useEffect(() => {
+        connect()
+    }, []);
 
     const hashColor = (str) => {
         // Your hashColor function implementation here
@@ -59,6 +81,8 @@ function Chat() {
         const name = e.target.accessKey || e.target.name;
         if (state.room === name) return;
         setState({ ...state, room: name });
+        eventsRef.current.close()
+        connect()
     };
 
     const handleSendMessage = (e) => {
@@ -70,16 +94,11 @@ function Chat() {
             })
         }
     };
-    
-
-    const seed = () => {
-
-    }
 
     return (
         <div className='grid md:grid-cols-6 bg-slate-700 m-1 rounded-lg bg-opacity-80 absolute overflow-auto h-full '>
         {/* Left column (hidden on mobile) */}
-        <div className='md:col-start-1 md:col-span-1 h-100% border-r border-black p-2 m-6 hidden md:grid overflow-auto w-fit'>
+        <div className='md:col-start-1 md:col-span-1 h-100% border-r border-black p-2 m-6 hidden md:grid overflow-y-scroll w-fit'>
             <div>
                 <p className='text-white font-thin text-4xl mb-4'>Byrne Creek Bros</p>
                 <p className='text-white font-thin text-4xl mb-4'>chat server</p> {state.rooms.length}
@@ -90,7 +109,7 @@ function Chat() {
                 {state.rooms.map((room) => (
                     <button onClick={changeRoom} className='bg-black text-white text-left rounded-md m-2 p-4 w-full line-clamp-3 h-fit -translate-x-6' accessKey={room.name}>
                         <p className='grid font-semibold text-md' accessKey={room.name}>{room.name}</p>
-                        <p className='text-sm' accessKey={room.name}>Bills: {room.messages.map(msg => msg.message)}</p>
+                        <p className='text-sm' accessKey={room.name}>{room.messages[room.messages.length-1]?.username + " " + room.messages[room.messages.length-1]?.message}</p>
                     </button>
                 ))}
             </div>
@@ -133,3 +152,4 @@ function Chat() {
 }
 
 export default Chat;
+
