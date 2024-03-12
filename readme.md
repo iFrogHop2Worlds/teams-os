@@ -1,6 +1,8 @@
-### Friends Chat Service
+### Friends Os
 
 A real time messaging service anyone can host themself. Code is opensource and free to use. Feel free to raise issues, make pr's.
+
+Future features will include file systems, collaborative spaces, voice/video, federations (mesh networks/web)
 
 ## Getting started
 
