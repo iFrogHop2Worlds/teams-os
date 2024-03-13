@@ -56,16 +56,27 @@ function Chat() {
     }
 
     useEffect(() => {
+        let seed =  fetch('http://127.0.0.1:8000/chat_state')
+            .then( async seed => {
+                    
+                await seed.json().then( messages => {
+                    console.log(messages)
+                    setState({...state, rooms: messages})
+                })
+                    
+            })
+            .catch( error => console.log(error))
+
         connect()
-    }, []);
+    }, [state, setMessage]);
 
-    const hashColor = (str) => {
-        // Your hashColor function implementation here
-    };
-
+ 
     const addRoom = (e) => {
         e.preventDefault();
-
+        fetch('http://127.0.0.1:8000/create_room', {
+            method: 'POST',
+            body: JSON.stringify({ name: newRoom }),
+        })
         if (state.rooms.find(room => room.name === newRoom)) {
         changeRoom(newRoom);
         return false;
@@ -78,9 +89,12 @@ function Chat() {
     };
 
     const changeRoom = (e) => {
-        const name = e.target.accessKey || e.target.name;
+        e.preventDefault();
+        console.log(state.rooms)
+        const name =  e.target.name;
         if (state.room === name) return;
-        setState({ ...state, room: name });
+        setState({ ...state, room: name, messages: state.messages });
+    
         eventsRef.current.close()
         connect()
     };
@@ -92,7 +106,13 @@ function Chat() {
                 method: 'POST',
                 body: JSON.stringify({ room: state.room, username, message }),
             })
+            .then( () => {
+                setMessage('')
+                setState(...state)
+            })
+            .catch( error => console.log(error))
         }
+        
     };
 
     return (
@@ -107,9 +127,9 @@ function Chat() {
 
             <div className='grid '>
                 {state.rooms.map((room) => (
-                    <button onClick={changeRoom} className='bg-black text-white text-left rounded-md m-2 p-4 w-full line-clamp-3 h-fit -translate-x-6' accessKey={room.name}>
-                        <p className='grid font-semibold text-md' accessKey={room.name}>{room.name}</p>
-                        <p className='text-sm' accessKey={room.name}>{room.messages[room.messages.length-1]?.username + " " + room.messages[room.messages.length-1]?.message}</p>
+                    <button key={room.room} onClick={changeRoom} className='bg-black text-white text-left rounded-md m-2 p-4 w-full  h-fit -translate-x-6 z-50' name={room.room} accessKey={room.room}>
+                        {room.room + " "}
+                       {room.messages[room.messages.length-1]?.username + " " + room.messages[room.messages.length-1]?.message}
                     </button>
                 ))}
             </div>
@@ -131,10 +151,10 @@ function Chat() {
                 </div>
             </div>
             <div className='grid h-full place-content-end justify-start'>
-                <ul className='text-white h-full overflow-y-auto'>
-                    {state.rooms.find(room => room.name === state.room)?.messages.map((message) => (
+                <ul key={state.room} className='text-white h-full overflow-y-auto'>
+                    {state.rooms.find(room => room.room === state.room)?.messages.map((message, idx) => (
                         <li key={message.id}>
-                            <b>{message.username}</b>: {message.message}
+                            <b key={idx}>{message.username}</b>: {message.message}
                         </li>
                     ))}
                 </ul>

@@ -5,16 +5,16 @@ pub struct ChatState {
     pub rooms: Vec<Room>,
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Debug, Clone)]
 pub struct Room {
-    pub name: String,
+    pub room: String,
     pub messages: Vec<Message>,
 }
 
 impl ChatState {
     pub fn get_room_messages(&self, room_name: &str) -> Option<&Vec<Message>> {
         self.rooms.iter()
-            .find(|room| room.name == room_name)
+            .find(|room| room.room == room_name)
             .map(|room| &room.messages)
     }
 }

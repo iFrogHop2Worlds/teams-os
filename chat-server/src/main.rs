@@ -7,9 +7,11 @@ use crate::chat::*;
 use crate::api_routes::message_api;
 pub fn all() -> Vec<rocket::Route> {
     routes![
+        message_api::create_new_room,
         message_api::events,
         message_api::post,
         message_api::get_room_messages,
+        message_api::get_chat_state,
     ]
 }
 
@@ -22,7 +24,7 @@ pub fn all() -> Vec<rocket::Route> {
 async fn main() -> Result<(), Box<dyn Error>> {
 
     let chat_state = Arc::new(Mutex::new(ChatState {
-        rooms: vec![Room{name: "lobby".to_string(), messages: Vec::new()}],
+        rooms: vec![Room{room: "lobby".to_string(), messages: Vec::new()}],
     }));
 
     let allowed_origins = AllowedOrigins::all();
