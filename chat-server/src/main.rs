@@ -15,11 +15,6 @@ pub fn all() -> Vec<rocket::Route> {
     ]
 }
 
-// 2do
-// update app state from the event stream/main? (construct app state) vs doing it on the f.e
-// send app_state to db periodically
-// seed app state from db when server starts
-
 #[rocket::main]
 async fn main() -> Result<(), Box<dyn Error>> {
 
@@ -41,6 +36,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let _ = rocket::build()
         .manage(chat_state.clone())
         .manage(channel::<Message>(1024).0)
+        .manage(channel::<ChatState>(1024).0)
         .mount("/", all())
         .attach(cors)
         .launch()
