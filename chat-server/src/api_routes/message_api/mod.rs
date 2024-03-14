@@ -7,6 +7,15 @@ use crate::chat::{ChatState, Message, Room};
 pub use rocket::tokio::sync::broadcast::{channel, Sender, error::RecvError};
 pub use rocket::tokio::select;
 
+/**
+    There are 3 primary endpoints which make chat functional. We have two Steams
+    /events is dedicated to messages and /chat_state/events is dedicated to updating
+    state across clients.
+
+    we have some convenience and utility endpoints. Seed is called when a client connects
+    with no state.
+**/
+
 /// Returns an infinite stream of server-sent events. Each event is a message
 /// pulled from a broadcast queue sent by the `post` handler.
 #[get("/events")]
@@ -27,23 +36,40 @@ pub async fn events(queue: &State<Sender<Message>>, mut end: Shutdown) -> EventS
         }
     }
 }
+/// Returns an infinite stream of server-sent events. Each event is a State Object
+/// pulled from a broadcast queue sent by the `post` handler.
+#[get("/chat_state/events")]
+pub fn get_chat_state(chat_state_tx: &State<Sender<ChatState>>, mut end: Shutdown) -> EventStream![] {
+    let mut rx = chat_state_tx.subscribe();
+    EventStream! {
+        loop {
+            let chat_state = select! {
+                chat_state = rx.recv() => match chat_state {
+                    Ok(chat_state) => chat_state,
+                    Err(RecvError::Closed) => break,
+                    Err(RecvError::Lagged(_)) => continue,
+                },
+                _ = &mut end => break,
+            };
 
-/// Receive a message from a form submission and broadcast it to any receivers.
+            yield Event::json(&chat_state);
+        }
+    }
+}
+
+/// Receive a message from a form submission
 /// Update App State
+/// and broadcast to receivers.
 #[post("/message", data = "<json>")]
 pub fn post(json: Json<Message>, queue: &State<Sender<Message>>, state: &State<Arc<Mutex<ChatState>>>, chat_state_tx: &State<Sender<ChatState>>){
     let mut chat_state = state.lock().unwrap();
 
     if let Some(mut room) = chat_state.rooms.iter_mut().find(|room| room.room == json.room) {
-        // Add the message to the room's messages vector
         room.messages.push(json.clone().into_inner());
     } else {
-        // Handle room not found scenario (e.g., error message)
         println!("Room does not exist");
     }
-    // if json.name === chat_state.rooms.*.name then append messages
-    println!("json message in send: {:?}", &chat_state.rooms);
-    // A send 'fails' if there are no active subscribers. That's okay.
+
     let _res = queue.send(json.into_inner());
     let _res = chat_state_tx.send(chat_state.clone());
 }
@@ -57,7 +83,7 @@ pub fn get_room_messages(room_name: &str, state: &State<Arc<Mutex<ChatState>>>) 
     messages.map(|messages| Json(messages.to_vec()))
 }
 
-#[derive(Deserialize)]  // Add this for deserialization
+#[derive(Deserialize)]
 struct CreateRoomData {
     name: String,
 }
@@ -79,28 +105,12 @@ pub fn create_new_room(room_data: Json<CreateRoomData>, state: &State<Arc<Mutex<
     Some(Json(new_room))
 }
 
-/// Seed the front end client
-#[get("/chat_state/events")]
-pub fn get_chat_state(chat_state_tx: &State<Sender<ChatState>>, mut end: Shutdown) -> EventStream![] {
-    let mut rx = chat_state_tx.subscribe();
-    EventStream! {
-        loop {
-            let chat_state = select! {
-                chat_state = rx.recv() => match chat_state {
-                    Ok(chat_state) => chat_state,
-                    Err(RecvError::Closed) => break,
-                    Err(RecvError::Lagged(_)) => continue,
-                },
-                _ = &mut end => break,
-            };
-
-            yield Event::json(&chat_state);
-        }
-    }
+/// Seed the front end client on first load.
+#[get("/seed")]
+pub fn seed(state: &State<Arc<Mutex<ChatState>>>) -> Option<Json<Vec<Room>>> {
+    let chat_state = state.lock().unwrap();
+    Some(Json(chat_state.rooms.clone()))
 }
 
-// (state: &State<Arc<Mutex<ChatState>>>) -> Option<Json<Vec<Room>>> {
-// let chat_state = state.lock().unwrap();
-// Some(Json(chat_state.rooms.clone()))
-// }
+
 

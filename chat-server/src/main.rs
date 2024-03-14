@@ -12,6 +12,7 @@ pub fn all() -> Vec<rocket::Route> {
         message_api::post,
         message_api::get_room_messages,
         message_api::get_chat_state,
+        message_api::seed,
     ]
 }
 
