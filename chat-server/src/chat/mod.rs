@@ -2,6 +2,7 @@ use rocket::serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ChatState {
+
     pub rooms: Vec<Room>,
 }
 
@@ -16,6 +17,11 @@ impl ChatState {
         self.rooms.iter()
             .find(|room| room.room == room_name)
             .map(|room| &room.messages)
+    }
+
+    pub fn update_room(&mut self, room_name: &str) -> bool {
+       // self.room
+        true
     }
 }
 

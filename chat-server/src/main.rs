@@ -8,6 +8,7 @@ use crate::api_routes::message_api;
 pub fn all() -> Vec<rocket::Route> {
     routes![
         message_api::create_new_room,
+        message_api::delete_room,
         message_api::events,
         message_api::post,
         message_api::get_room_messages,
@@ -27,7 +28,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let cors = rocket_cors::CorsOptions {
         allowed_origins,
-        allowed_methods: vec![Method::Get, Method::Post].into_iter().map(From::from).collect(),
+        allowed_methods: vec![Method::Get, Method::Post, Method::Delete].into_iter().map(From::from).collect(),
         allowed_headers: AllowedHeaders::some(&["Authorization", "Accept"]),
         allow_credentials: true,
         ..Default::default()

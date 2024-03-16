@@ -27,11 +27,11 @@ export default function LoginScreen() {
     formState: { errors },
   } = useForm();
  
-  const submitHandler = async ({ username, password }) => {
+  const submitHandler = async ({ name, password }) => {
     try {
       const result = await signIn('credentials', {
         redirect: true,
-        username,
+        name,
         password,
       });
       if (result.error) {
@@ -50,18 +50,18 @@ export default function LoginScreen() {
       >
         <p className="mb-4 text-xl text-white">Login</p> 
         <div className="mb-4">
-          <label htmlFor="username" className='text-white'>Username</label>
+          <label htmlFor="name" className='text-white'>Username</label>
           <input
-            type="username"
-            {...register('username', {
-              required: 'Please enter username',
+            type="name"
+            {...register('name', {
+              required: 'Please enter name',
             })}
-            className="w-full bg-blue-100"
-            id="username"
+            className="w-full bg-blue-100 text-black"
+            id="name"
             autoFocus
           ></input>
-          {errors.username && (
-            <div className="text-red-500">{errors.username.message}</div>
+          {errors.name && (
+            <div className="text-red-500">{errors.name.message}</div>
           )}
         </div>
         <div className="mb-4">
@@ -72,7 +72,7 @@ export default function LoginScreen() {
               required: 'Please enter password',
               minLength: { value: 6, message: 'password is more than 5 chars' },
             })}
-            className="w-full bg-blue-100"
+            className="w-full bg-blue-100 text-black"
             id="password"
             autoFocus
           ></input>

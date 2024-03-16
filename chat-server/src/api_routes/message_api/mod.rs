@@ -66,6 +66,7 @@ pub fn post(json: Json<Message>, queue: &State<Sender<Message>>, state: &State<A
 
     if let Some(mut room) = chat_state.rooms.iter_mut().find(|room| room.room == json.room) {
         room.messages.push(json.clone().into_inner());
+        //  chat_state.update_room(room.room.clone());
     } else {
         println!("Room does not exist");
     }
@@ -103,6 +104,28 @@ pub fn create_new_room(room_data: Json<CreateRoomData>, state: &State<Arc<Mutex<
     chat_state.rooms.push(new_room.clone());
 
     Some(Json(new_room))
+}
+
+#[delete("/delete_room/<room_name>")]
+pub fn delete_room(room_name: String, state: &State<Arc<Mutex<ChatState>>>, chat_state_tx: &State<Sender<ChatState>>) -> Option<Json<()>> {
+    let mut chat_state = state.lock().unwrap();
+
+    // Find the index of the room to delete
+    let room_index = chat_state.rooms.iter().position(|room| room.room == room_name);
+
+    match room_index {
+        Some(index) => {
+            chat_state.rooms.remove(index);
+            println!("Room '{}' deleted successfully", room_name);
+
+            let _res = chat_state_tx.send(chat_state.clone()); // Broadcast updated state
+            Some(Json(()))
+        },
+        None => {
+            println!("Room with name '{}' not found", room_name);
+            None
+        }
+    }
 }
 
 /// Seed the front end client on first load.

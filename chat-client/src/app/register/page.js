@@ -1,23 +1,14 @@
 'use client'
-import React, { useEffect } from 'react';
-import { signIn, useSession } from 'next-auth/react';
+import React from 'react';
+import { signIn } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
 import { getError } from '../../utils/error';
 import { toast } from 'react-toastify';
-import { useRouter } from 'next/navigation';
 import axios from 'axios';
 
+
 export default function LoginScreen() {
-  const { data: session } = useSession();
 
-  const router = useRouter();
-  const { redirect } = router;
-
-  useEffect(() => {
-    if (session?.user) {
-      router.push(redirect || '/');
-    }
-  }, [router, session, redirect]);
 
   const {
     handleSubmit,
@@ -74,7 +65,7 @@ export default function LoginScreen() {
               required: 'Please enter password',
               minLength: { value: 6, message: 'password is more than 5 chars' },
             })}
-            className="w-full bg-blue-200"
+            className="w-full bg-blue-200 text-black"
             id="password"
             autoFocus
           ></input>
@@ -85,7 +76,7 @@ export default function LoginScreen() {
         <div className="mb-4">
           <label htmlFor="confirmPassword">Confirm Password</label>
           <input
-            className="w-full bg-blue-200"
+            className="w-full bg-blue-200 text-black"
             type="password"
             id="confirmPassword"
             {...register('confirmPassword', {

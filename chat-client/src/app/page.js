@@ -1,20 +1,24 @@
 'use client'
 import React, { useState, useEffect, useRef } from 'react';
-import { useSession } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { SettingsIcon } from '@/components/SettingsIcon';
 
 function Chat() {
-    let { data: session, status } = useSession();
+    const {status, data: session } = useSession();
+    const router = useRouter();
+  
     const [connectedStatus, setConnectedStatus] = useState(false);
-    const [retryTime, setRetryTime] = useState(1);
     const [retryStateTime, setRetryStateTime] = useState(1);
-    const [message, setMessage] = useState('');
     const [newRoom, setNewRoom] = useState('');
+    const [deleteRoom, setDeleteRoom] = useState('');
+    const [message, setMessage] = useState('');
+    const [currRoom, setCurrRoom] = useState('nullRoom');
     const [state, setState] = useState({
-        room: "nullRoom",
         rooms: [{ name: "lobby", messages: [] }],
         connected: false,
     });
-    const eventsRef = useRef(null);
+  
     const stateRef = useRef(null);
    
     const scrollBottom = () => {
@@ -24,33 +28,14 @@ function Chat() {
     }
  
     const connect = () => {
-        // Streams messages for constructing state
-        if (!eventsRef.current) {
-            const eventSource = new EventSource(process.env.NEXT_PUBLIC_API_BASE_URL + '/events');
 
-            eventSource.onopen = () => {
-                setConnectedStatus(true);
-                setRetryTime(1);
-            };
-        
-            eventSource.onerror = () => {
-                setConnectedStatus(false);
-                eventSource.close();
-                const timeout = Math.min(60, Math.pow(2, retryTime) * 5);
-                setRetryTime(timeout);
-                setTimeout(() => connect(), timeout * 1000);
-            };
-        
-            eventsRef.current = eventSource;
-        }
-        // Streams state keeping clients synced
         if (!stateRef.current) {
             const stateSource = new EventSource(process.env.NEXT_PUBLIC_API_BASE_URL + '/chat_state/events');
 
             stateSource.onmessage = (e) => {
                 try {
                     let _state = JSON.parse(e.data);
-                    const setStates = (update) => setState({ ...state, room: state.room =='nullRoom'? "lobby" : state.room, rooms: update });
+                    const setStates = (update) => setState({ ...state, rooms: update });
                     setStates(_state.rooms);
                 } catch (error) {
                     console.log(error);
@@ -75,26 +60,6 @@ function Chat() {
         
     }
 
-    useEffect( () => {
-        console.log(status)
-        console.log(session)
-        if(state.room == 'nullRoom') {
-            fetch(process.env.NEXT_PUBLIC_API_BASE_URL + '/seed')
-            .then( seed => {
-                // if the client has not been initialized, seed it with newest state    
-                seed.json().then( messages => {
-                    setState({...state, room: state.room =='nullRoom'? "lobby" : state.room, rooms: messages});
-                })    
-            })
-            .catch( error => console.log(error))
-        }
-        
-        connect()    
-        scrollBottom()
-
-    }, [state.room, state]); 
-
- 
     const addRoom = (e) => {
         e.preventDefault();
         if(newRoom != '' && newRoom != undefined){
@@ -102,32 +67,58 @@ function Chat() {
             method: 'POST',
             body: JSON.stringify({ name: newRoom }),
             })
+
             if (state.rooms.find(room => room.name === newRoom)) {
-            changeRoom(newRoom);
-            return false;
+                changeRoom(newRoom);
+                return false;
             }
 
             const newRooms = [...state.rooms, { name: newRoom, messages: [] }];
-            setNewRoom('');
-            setState({ ...state, rooms: newRooms });
+            
             changeRoom(newRoom);
+            setState({ ...state, rooms: newRooms });
+
             return true;
         }
     };
 
-    const changeRoom = (e) => {
-        const name =  e.target.name;
-        if (state.room === name) return;
-        setState({ ...state, room: name });
+    const changeRoom = (room) => {  
+        setNewRoom('');    
+        if (state.room === room) return;
+
+        setCurrRoom(room);
         scrollBottom();
     };
 
-    const handleSendMessage = (e) => {
+    const changeRoomOnClickHandler = (e) => {
+        e.preventDefault();
+        const name =  e.target.name;
+        if (currRoom === name) return;
+        setCurrRoom(name);
+        scrollBottom();
+    };
+
+    const deletRoomHandler = (e) => {
+        e.preventDefault();
+        if(deleteRoom == 'lobby'){
+            window.alert("Sorry aboot that. But lobby cannot be deleted right now.")
+            return
+        }
+
+        fetch(process.env.NEXT_PUBLIC_API_BASE_URL + '/delete_room/' + deleteRoom, { method: 'DELETE' })
+        if(currRoom == deleteRoom){
+           changeRoom('lobby') 
+        }
+    
+        setDeleteRoom('')
+    }
+
+    const messageHandler = (e) => {
         e.preventDefault();
         if (message !== '') {
-            fetch('http://127.0.0.1:8000/message', {
+            fetch(process.env.NEXT_PUBLIC_API_BASE_URL + '/message', {
                 method: 'POST',
-                body: JSON.stringify({ room: state.room, username: session.user.name, message }),
+                body: JSON.stringify({ room: currRoom, username: session.user.name, message }),
             })
             .then( () => {
                 setMessage('')
@@ -136,25 +127,53 @@ function Chat() {
         }
         
     };
-    
 
+    const logoutHandler = () => {
+        signOut({ callbackUrl: '/login' });
+      };
+
+    useEffect( () => {
+        if(currRoom == 'nullRoom') {
+            fetch(process.env.NEXT_PUBLIC_API_BASE_URL + '/seed')
+            .then( seed => {
+                seed.json().then( messages => {
+                    setState({...state, rooms: messages});
+                })    
+            })
+            .then(() => {
+                setCurrRoom("lobby")
+            })
+            .catch( error => console.log(error))
+        }
+       
+        connect()    
+        scrollBottom()
+
+    }, [currRoom, state]); 
+
+    useEffect(() => {
+        if (!session) 
+          router.push('/login'); 
+    }, [router, session]);
+    
+    
     return (
-        <div className='grid md:grid-cols-6 bg-slate-700 border border-cyan-400 m-1 rounded-lg bg-opacity-80 p-4 overflow-y-scroll max-h-screen '>
+    <div className={'grid gap-16 md:grid-cols-6 bg-slate-700 border border-cyan-400 m-1 rounded-lg bg-opacity-80 p-4 overflow-y-scroll max-h-screen ' + (status === "authenticated" ? 'inline-block' : 'hidden')}>
         {/* Left column (hidden on mobile) */}
-        <div className='md:col-start-1 md:col-span-1 h-100% border-r border-emerald-600 p-2 m-6 hidden md:grid overflow-y-scroll  w-fit min-h-[700px] max-h-screen '>
+        <div className='md:col-start-1 md:col-span-1  border-r border-emerald-600 p-2 m-6 hidden lg:grid w-fit   min-h-[700px] max-h-screen defer '>
             <div className='mb-4 font-thin text-white'>
-                <p className=' text-gray-500 text-4xl mb-4'>Byrne Creek Bros</p>
+                <p className=' text-gray-500 text-4xl mb-4'>{process.env.NEXT_PUBLIC_SERVER_NAME}</p>
                 <p className=' text-orange-400 text-4xl mb-4'>chat server</p> 
                 {state.rooms.length} chat rooms
-                <hr className='border-r border-emerald-600 mr-6' />
+                <hr className='border-r border-cyan-600 mr-6' />
             </div>
 
-            <div className='overflow-y-scroll flex flex-col-reverse mb-12'>
+            <div className='overflow-y-scroll flex flex-col-reverse mb-8 -translate-x-6'>
                 {state.rooms?.map((room) => (
                     <button 
                         key={room.room} 
-                        onClick={changeRoom} 
-                        className={'bg-black text-white text-left rounded-md m-1 p-8 mr-8 z-50 overflow-hidden ' + (state.room == room.room? 'border border-cyan-400' : '')} 
+                        onClick={changeRoomOnClickHandler} 
+                        className={'bg-black text-white text-left rounded-md m-1 p-3 z-50 overflow-hidden ' + (currRoom == room.room? 'border border-cyan-400' : '')} 
                         name={room.room} accessKey={room.room}
                         >
                             {'[' +room.room + '] ' + 
@@ -163,22 +182,21 @@ function Chat() {
                     </button>
                 ))}
             </div>
-            <form id="new-room" className='flex place-self-end justify-start w-full h-12 pr-8 -translate-y-10'>
+            <form id="new-room" className='flex place-self-end justify-start  h-12 pr-8 -translate-y-6 -translate-x-3'>
                 <input type="text" name="name" id="name" autoComplete="off"
                     placeholder="new room..." maxLength="29" value={newRoom} onChange={(e) => setNewRoom(e.target.value)}></input>
                 <button onClick={(e) => addRoom(e)} className='bg-emerald-600 w-full h-full p-2 ml-1 -mr-3'>+</button>
             </form>
-        </div>
-        
+        </div>  
 
         {/* Right column */}
-        <div className='md:col-start-2 md:col-span-4 md:ml-32 md:-mr-32 md:pl-12 grid z-50 '>       
-            <div className='p-3 min-h-screen'>
-                <div className='mb-4 overflow-y-scroll '>
-                    <article id='messageBody' key={state.room} className='text-white text-wrap h-[calc(100vh_-_15vh)] md:w-[520px] xl:w-[720px] overflow-y-scroll overflow-x-clip'>
-                        {state.rooms.find(room => room.room === state.room)?.messages.map((message, idx) => (
+        <div className='lg:col-start-2 lg:col-span-3 md:ml-32 md:-mr-32 md:pl-12 grid z-50 lg:-translate-x-12 w-full mx-auto p-1 '>       
+            <div className='p-3 min-h-screen w-fit'>
+                <div className=''>
+                    <article id='messageBody' key={state.room} className='text-white text-wrap h-[calc(100vh_-_15vh)] w-fit 2xl:w-[520px] overflow-y-scroll overflow-x-clip p-4 '>
+                        {state.rooms.find(room => room.room === currRoom)?.messages.map((message, idx) => (
                             <div className='bg-emerald-800 p-3 pb-4 m-2 rounded-xl border border-black text-wrap'>
-                                <p key={idx} className='max-w-fit'>
+                                <p key={idx} className=''>
                                     <em key={idx}>{message.username}:</em> {message.message}
                                     
                                 </p>
@@ -186,25 +204,48 @@ function Chat() {
                         ))}
                     </article>
                 </div>
-
-                <div className='flex w-4/6 justify-around'>
-                    <form className='flex mb-2 w-full text-white'>
-                        <input className='text-black w-2/3 m-2 p-3' type="text" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Message" />
-                        <button className='p-5 m-2 bg-emerald-600 rounded-md text-sm' onClick={(e) => handleSendMessage(e)}>Send</button>
-                        <button className='p-5 m-2 bg-slate-600 rounded-md text-sm inline-block md:hidden'>Menu</button>
+                <div className='lg:hidden mb-3 mr-6 flex justify-end'><SettingsIcon /></div>
+                <div className='flex justify-between '>
+                    <form className='flex mb-2 text-white'>
+                        <input className='text-black md:w-96 lg:ml-12  m-2 p-3' type="text" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Message" />
+                        <button className='p-5 m-2 bg-emerald-600 rounded-md text-sm' onClick={(e) => messageHandler(e)}>Send</button>
+                        <button className='p-5 m-2 bg-slate-600 rounded-md text-sm inline-block lg:hidden'>Menu</button>   
                     </form>
                 </div>
             </div>
         </div>
         {/*  Side menu  Large Screen*/}
-        <div className='md:col-start-6 md:col-span-1 text-white text-left'>
-            Logged in as {session?.user.name}  
-            <br/>
-            In chatroom {state.room}              
+        <div className='md:col-start-5 md:col-span-2 text-white md:flex flex-col justify-between hidden  ml-4'>
+            <div className='flex-col flex justify-between  text-center bg-black p-2 m-3 h-2/6 max-h-auto bg-opacity-40 rounded-lg'>
+                <div className='flex justify-between place-items-center p-2'>
+                    <button className='bg-slate-700 border text-lg p-2 mt-2 rounded-xl  mr-2  z-50' onClick={logoutHandler}>sign out</button>
+                    <SettingsIcon />
+                </div>   
+                <p className='text-sm'>
+                    Logged in as <em className='text-cyan-400'>{session?.user.name}</em> 
+                </p>         
+                <br/>
+
+                <p className='text-sm'><em className='font-semibold '>In Chatroom:</em> <i className='text-cyan-400'>{currRoom}</i></p>  
+
+                <form className='flex justify-evenly'>
+                    <input className='text-black w-5/6 m-2 p-3' type="text" value={deleteRoom} onChange={(e) => setDeleteRoom(e.target.value)} placeholder="room name" />
+                    <button className='p-5 m-2 bg-red-600 rounded-md text-sm' onClick={(e) => deletRoomHandler(e)}>Delete</button>
+                </form> 
+            </div>
+
+            <div className='flex-col flex justify-around  text-center bg-black p-2 m-3 h-full bg-opacity-40 rounded-lg '>
+                <p>Coming Soon</p><br />
+                <p>Voice Calls</p>
+                <p>Video Calls</p>
+                <p>File System</p>
+                <p>Collaborative Spaces</p>
+            </div>           
         </div>
     </div>   
     );
 }
-Chat.auth = true;
+
 export default Chat;
 
+Chat.Auth = true;
