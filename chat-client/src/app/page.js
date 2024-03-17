@@ -3,19 +3,19 @@ import React, { useState, useEffect, useRef } from 'react';
 import { signOut, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { SettingsIcon } from '@/components/SettingsIcon';
+import RoomList from '@/components/RoomList';
 
 function Chat() {
     const {status, data: session } = useSession();
     const router = useRouter();
-  
+    const [showSettings, setShowSettings] = useState(false);
     const [connectedStatus, setConnectedStatus] = useState(false);
     const [retryStateTime, setRetryStateTime] = useState(1);
     const [newRoom, setNewRoom] = useState('');
-    const [deleteRoom, setDeleteRoom] = useState('');
     const [message, setMessage] = useState('');
     const [currRoom, setCurrRoom] = useState('nullRoom');
     const [state, setState] = useState({
-        rooms: [{ name: "lobby", messages: [] }],
+        rooms: [{ name: currRoom, messages: [{username:"Friends-os", message: "Create or join a room to send a message"}] }],
         connected: false,
     });
   
@@ -95,21 +95,6 @@ function Chat() {
         setCurrRoom(name);
     };
 
-    const deletRoomHandler = (e) => {
-        e.preventDefault();
-        if(deleteRoom == 'lobby'){
-            window.alert("Sorry aboot that. But lobby cannot be deleted right now.")
-            return
-        }
-
-        fetch(process.env.NEXT_PUBLIC_API_BASE_URL + '/delete_room/' + deleteRoom, { method: 'DELETE' })
-        if(currRoom == deleteRoom){
-           changeRoom('lobby') 
-        }
-    
-        setDeleteRoom('')
-    }
-
     const messageHandler = (e) => {
         e.preventDefault();
         if (message !== '') {
@@ -134,11 +119,9 @@ function Chat() {
             fetch(process.env.NEXT_PUBLIC_API_BASE_URL + '/seed')
             .then( seed => {
                 seed.json().then( messages => {
+                    setCurrRoom(messages[messages.length-1].room);
                     setState({...state, rooms: messages});
                 })    
-            })
-            .then(() => {
-                setCurrRoom("lobby")
             })
             .catch( error => console.log(error))
         }
@@ -155,44 +138,27 @@ function Chat() {
     
     
     return (
-    <div className={'grid gap-16 md:grid-cols-6 bg-slate-700 border border-cyan-400 m-1 rounded-lg bg-opacity-80 p-4 overflow-y-scroll max-h-screen ' + (status === "authenticated" ? 'inline-block' : 'hidden')}>
+    <div className={'grid gap-16 md:grid-cols-6 bg-slate-700 border border-cyan-400 m-1 rounded-lg bg-opacity-80 p-4 overflow-y-scroll h-[calc(100vh_-_1vh)] ' + (status === "authenticated" ? 'inline-block' : 'hidden')}>
         {/* Left column (hidden on mobile) */}
-        <div className='lg:col-start-1 lg:col-span-1  border-r border-emerald-600 p-2 m-6 hidden lg:grid w-fit   min-h-[700px] max-h-screen defer '>
-            <div className='mb-4 font-thin text-white'>
-                <p className=' text-gray-500 text-4xl mb-4'>{process.env.NEXT_PUBLIC_SERVER_NAME}</p>
-                <p className=' text-orange-400 text-4xl mb-4'>chat server</p> 
-                {state.rooms.length} chat rooms
-                <hr className='border-r border-cyan-600 mr-6' />
-            </div>
-
-            <div className='overflow-y-scroll flex flex-col-reverse mb-8 -translate-x-6'>
-                {state.rooms?.map((room) => (
-                    <button 
-                        key={room.room} 
-                        onClick={changeRoomOnClickHandler} 
-                        className={'bg-black text-white text-left rounded-md m-1 p-3 z-50 overflow-hidden ' + (currRoom == room.room? 'border border-cyan-400' : '')} 
-                        name={room.room} accessKey={room.room}
-                        >
-                            {'[' +room.room + '] ' + 
-                            (room.messages[room.messages.length-1]?.username? room.messages[room.messages.length-1].username : "")  + ": " + 
-                            (room.messages[room.messages.length-1]?.message != undefined ? room.messages[room.messages.length-1]?.message : '')}
-                    </button>
-                ))}
-            </div>
-            <form id="new-room" className='flex place-self-end justify-start  h-12 pr-8 -translate-y-6 -translate-x-3'>
-                <input type="text" name="name" id="name" autoComplete="off"
-                    placeholder="new room..." maxLength="29" value={newRoom} onChange={(e) => setNewRoom(e.target.value)}></input>
-                <button onClick={(e) => addRoom(e)} className='bg-emerald-600 w-full h-full p-2 ml-1 -mr-3'>+</button>
-            </form>
+        <div className='lg:col-start-1 lg:col-span-1  border-r border-emerald-600 p-2 m-3 hidden lg:grid w-fit   min-h-[700px]'>
+            <RoomList
+                numberOfRooms = {state.rooms.length}
+                rooms = {state.rooms}
+                newRoom = {newRoom}
+                setNewRoom = {setNewRoom}
+                addRoom = {addRoom}
+                changeRoomOnClickHandler = {changeRoomOnClickHandler}
+                currRoom = {currRoom}
+            />
         </div>  
 
         {/* Right column */}
-        <div className='md:-translate-x-44 lg:col-start-2 lg:col-span-3 md:ml-32 md:-mr-32 md:pl-12 grid z-50 lg:-translate-x-12 w-full mx-auto p-1 '>       
-            <div className='p-3 min-h-screen w-fit'>
-                <div className=''>
-                    <article id='messageBody' key={state.room} className='text-white text-wrap h-[calc(100vh_-_15vh)] w-fit 2xl:w-[520px] overflow-y-scroll overflow-x-clip p-4 '>
+        <div className=' lg:col-start-2 lg:col-span-3 md:col-start-1 md:col-span-4 lg:ml-10 lg:pl-16 z-40  w-screen md:w-full mx-auto p-1 '>       
+            <div className='p-3 min-h-screen'>
+            
+                    <article id='messageBody' key={currRoom} className='text-white h-[calc(100vh_-_17vh)] w-full overflow-y-scroll overflow-x-clip p-4 flex flex-col mb-12'>
                         {state.rooms.find(room => room.room === currRoom)?.messages.map((message, idx) => (
-                            <div className='bg-emerald-800 p-3 pb-4 m-2 rounded-xl border border-black text-wrap'>
+                            <div className='bg-emerald-800 p-3 pb-4 m-2  rounded-xl border border-black text-left w-fit ml-auto mt-auto'>
                                 <p key={idx} className=''>
                                     <em key={idx}>{message.username}:</em> {message.message}
                                     
@@ -200,13 +166,17 @@ function Chat() {
                             </div>
                         ))}
                     </article>
+              
+                
+                <div className='lg:hidden mb-3 -translate-x-8 flex justify-between'>
+                    <button className='p-5 m-2 bg-slate-600 rounded-md text-sm inline-block lg:hidden '>Chats</button>  
+                    <SettingsIcon /> 
                 </div>
-                <div className='lg:hidden mb-3 mr-6 flex justify-end'><SettingsIcon /></div>
-                <div className='flex justify-between '>
-                    <form className='flex mb-2 text-white'>
-                        <input className='text-black md:w-96 lg:ml-12  m-2 p-3' type="text" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Message" />
+                <div className='flex justify-between -translate-x-8'>
+                    <form className='flex mb-2 text-white w-full'>
+                        <input className='text-black w-10/12 lg:ml-12  m-2 p-3' type="text" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Message" />
                         <button className='p-5 m-2 bg-emerald-600 rounded-md text-sm' onClick={(e) => messageHandler(e)}>Send</button>
-                        <button className='p-5 m-2 bg-slate-600 rounded-md text-sm inline-block lg:hidden'>Menu</button>   
+                       
                     </form>
                 </div>
             </div>
@@ -214,10 +184,17 @@ function Chat() {
         {/*  Side menu  Large Screen*/}
         <div className='md:col-start-5 md:col-span-2 text-white md:flex flex-col justify-between hidden  ml-4'>
             <div className='flex-col flex justify-between  text-center bg-black p-2 m-3 h-2/6 max-h-auto bg-opacity-40 rounded-lg'>
-                <div className='flex justify-between place-items-center p-2'>
-                    <button className='bg-slate-700 border text-lg p-2 mt-2 rounded-xl  mr-2  z-50' onClick={logoutHandler}>sign out</button>
-                    <SettingsIcon />
-                </div>   
+                <div className='flex justify-end place-items-center p-2'>
+                   <div className={`bg-black bg-opacity-30 text-white w-full text-left rounded-md mr-3 p-6  z-40 overscroll-x-none overflow-hidden ${
+                      showSettings ? 'hidden' : ''
+                    }`}>
+                      <button className='bg-slate-700 border text-lg p-2 mt-2 rounded-xl  mr-2  z-50' onClick={logoutHandler}>sign out</button>
+                    </div>   
+                    <div onClick={() => setShowSettings(!showSettings)}>
+                      <SettingsIcon />
+                    </div> 
+                </div>  
+                
                 <p className='text-sm'>
                     Logged in as <em className='text-cyan-400'>{session?.user.name}</em> 
                 </p>         
@@ -225,10 +202,7 @@ function Chat() {
 
                 <p className='text-sm'><em className='font-semibold '>In Chatroom:</em> <i className='text-cyan-400'>{currRoom}</i></p>  
 
-                <form className='flex justify-evenly'>
-                    <input className='text-black w-5/6 m-2 p-3' type="text" value={deleteRoom} onChange={(e) => setDeleteRoom(e.target.value)} placeholder="room name" />
-                    <button className='p-5 m-2 bg-red-600 rounded-md text-sm' onClick={(e) => deletRoomHandler(e)}>Delete</button>
-                </form> 
+                
             </div>
 
             <div className='flex-col flex justify-around  text-center bg-black p-2 m-3 h-full bg-opacity-40 rounded-lg '>
