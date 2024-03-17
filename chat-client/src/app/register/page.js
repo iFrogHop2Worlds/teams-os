@@ -1,14 +1,25 @@
 'use client'
-import React from 'react';
-import { signIn } from 'next-auth/react';
+import React, {useEffect} from 'react';
+import { signIn, useSession } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
 import { getError } from '../../utils/error';
 import { toast } from 'react-toastify';
 import axios from 'axios';
-
+import { useRouter } from 'next/navigation';
 
 export default function LoginScreen() {
 
+  const { data: session } = useSession();
+
+  const router = useRouter();
+  const { redirect } = router;
+
+  useEffect(() => {
+    console.log(session)
+    if (session?.user) {
+      router.push(redirect || '/');
+    }
+  }, [router, session, redirect]);
 
   const {
     handleSubmit,

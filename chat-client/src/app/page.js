@@ -75,9 +75,8 @@ function Chat() {
 
             const newRooms = [...state.rooms, { name: newRoom, messages: [] }];
             
-            changeRoom(newRoom);
             setState({ ...state, rooms: newRooms });
-
+            changeRoom(newRoom);
             return true;
         }
     };
@@ -87,7 +86,6 @@ function Chat() {
         if (state.room === room) return;
 
         setCurrRoom(room);
-        scrollBottom();
     };
 
     const changeRoomOnClickHandler = (e) => {
@@ -95,7 +93,6 @@ function Chat() {
         const name =  e.target.name;
         if (currRoom === name) return;
         setCurrRoom(name);
-        scrollBottom();
     };
 
     const deletRoomHandler = (e) => {
@@ -160,7 +157,7 @@ function Chat() {
     return (
     <div className={'grid gap-16 md:grid-cols-6 bg-slate-700 border border-cyan-400 m-1 rounded-lg bg-opacity-80 p-4 overflow-y-scroll max-h-screen ' + (status === "authenticated" ? 'inline-block' : 'hidden')}>
         {/* Left column (hidden on mobile) */}
-        <div className='md:col-start-1 md:col-span-1  border-r border-emerald-600 p-2 m-6 hidden lg:grid w-fit   min-h-[700px] max-h-screen defer '>
+        <div className='lg:col-start-1 lg:col-span-1  border-r border-emerald-600 p-2 m-6 hidden lg:grid w-fit   min-h-[700px] max-h-screen defer '>
             <div className='mb-4 font-thin text-white'>
                 <p className=' text-gray-500 text-4xl mb-4'>{process.env.NEXT_PUBLIC_SERVER_NAME}</p>
                 <p className=' text-orange-400 text-4xl mb-4'>chat server</p> 
@@ -190,7 +187,7 @@ function Chat() {
         </div>  
 
         {/* Right column */}
-        <div className='lg:col-start-2 lg:col-span-3 md:ml-32 md:-mr-32 md:pl-12 grid z-50 lg:-translate-x-12 w-full mx-auto p-1 '>       
+        <div className='md:-translate-x-44 lg:col-start-2 lg:col-span-3 md:ml-32 md:-mr-32 md:pl-12 grid z-50 lg:-translate-x-12 w-full mx-auto p-1 '>       
             <div className='p-3 min-h-screen w-fit'>
                 <div className=''>
                     <article id='messageBody' key={state.room} className='text-white text-wrap h-[calc(100vh_-_15vh)] w-fit 2xl:w-[520px] overflow-y-scroll overflow-x-clip p-4 '>

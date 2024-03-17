@@ -71,7 +71,7 @@ pub fn post(json: Json<Message>, queue: &State<Sender<Message>>, state: &State<A
         println!("Room does not exist");
     }
 
-    let _res = queue.send(json.into_inner());
+    // let _res = queue.send(json.into_inner());
     let _res = chat_state_tx.send(chat_state.clone());
 }
 
@@ -89,7 +89,7 @@ struct CreateRoomData {
     name: String,
 }
 #[post("/create_room", data = "<room_data>")]
-pub fn create_new_room(room_data: Json<CreateRoomData>, state: &State<Arc<Mutex<ChatState>>>) -> Option<Json<Room>>    {
+pub fn create_new_room(room_data: Json<CreateRoomData>, state: &State<Arc<Mutex<ChatState>>>, chat_state_tx: &State<Sender<ChatState>>) -> Option<Json<Room>>    {
     let mut chat_state = state.lock().unwrap();
 
     if chat_state.rooms.iter().any(|room| room.room == room_data.name) {
@@ -102,7 +102,7 @@ pub fn create_new_room(room_data: Json<CreateRoomData>, state: &State<Arc<Mutex<
         messages: Vec::new(),
     };
     chat_state.rooms.push(new_room.clone());
-
+    let _res = chat_state_tx.send(chat_state.clone());
     Some(Json(new_room))
 }
 
