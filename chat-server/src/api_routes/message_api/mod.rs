@@ -61,17 +61,18 @@ pub fn get_chat_state(chat_state_tx: &State<Sender<ChatState>>, mut end: Shutdow
 /// Update App State
 /// and broadcast to receivers.
 #[post("/message", data = "<json>")]
-pub fn post(json: Json<Message>, queue: &State<Sender<Message>>, state: &State<Arc<Mutex<ChatState>>>, chat_state_tx: &State<Sender<ChatState>>){
+pub fn post(json: Json<Message>, queue: &State<Sender<Message>>, state: &State<Arc<Mutex<ChatState>>>, chat_state_tx: &State<Sender<ChatState>>) {
     let mut chat_state = state.lock().unwrap();
 
-    if let Some(mut room) = chat_state.rooms.iter_mut().find(|room| room.room == json.room) {
+    if let Some(room_index) = chat_state.rooms.iter().position(|room| room.room == json.room) {
+        let mut room = chat_state.rooms.remove(room_index);
         room.messages.push(json.clone().into_inner());
-        //  chat_state.update_room(room.room.clone());
+        chat_state.rooms.push(room); // Insert the updated room at the end
     } else {
         println!("Room does not exist");
     }
 
-    // let _res = queue.send(json.into_inner());
+    // let _res = queue.send(json.into_inner()); // Commented out if not used
     let _res = chat_state_tx.send(chat_state.clone());
 }
 

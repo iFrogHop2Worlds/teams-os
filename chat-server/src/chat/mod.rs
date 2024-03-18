@@ -2,7 +2,6 @@ use rocket::serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ChatState {
-
     pub rooms: Vec<Room>,
 }
 
