@@ -37,13 +37,13 @@ export default function RoomList({
                 className={`text-xl text-white  font-extrabold p-1 mb-4 mr-4 float-right -translate-y-24 z-50 cursor-pointer `}
                 onClick={() => toggleEditGroup(room.room)}
               >
-                <em className='absolute z-50'>...</em>
+                <em className=' z-50'>...</em>
               </p>
               {editRoomIds[room.room] && <EditRoom dispatch={dispatch} />}
               <button
                 key={room.room}
                 onClick={changeRoomOnClickHandler}
-                className={`bg-black text-white w-full text-left rounded-md m-1 p-6  z-40 overscroll-x-none overflow-hidden ${
+                className={`bg-black text-white w-full text-left rounded-md m-1 p-6 pr-4  z-40 overscroll-x-none overflow-hidden ${
                   currRoom === room.room ? 'border border-cyan-400' : ''
                 }`}
                 name={room.room}

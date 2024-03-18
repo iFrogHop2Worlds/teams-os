@@ -30,8 +30,9 @@ function Chat() {
 
             stateSource.onmessage = (e) => {
                 try {
-                    let _state = JSON.parse(e.data);
-                    dispatch({ type: 'SYNC_SERVER_STATE', payload: _state.rooms });
+                    let chat = JSON.parse(e.data);
+                    console.log(chat)
+                    dispatch({ type: 'SYNC_SERVER_STATE', payload: chat.rooms });
                 } catch (error) {
                     console.log(error);
                 }
@@ -120,7 +121,7 @@ function Chat() {
         connect()    
         scrollBottom()
 
-    }, [chat_state.currRoom]); 
+    }, [chat_state.currRoom, chat_state]); 
 
     useEffect(() => {
         if (!session) 
@@ -146,12 +147,12 @@ function Chat() {
 
         {/* Right column */}
         <div className=' lg:col-start-2 lg:col-span-3 md:col-start-1 md:col-span-4 lg:ml-10 lg:pl-16 z-40  w-screen md:w-full mx-auto p-1 '>       
-            <div className='p-3 min-h-screen'>
+            <div className='p-3 min-h-screen flex flex-col place-content-end'>
             
-                    <article id='messageBody' key={chat_state.currRoom} className='text-white h-[calc(100vh_-_17vh)] w-full overflow-y-scroll overflow-x-clip p-4 flex flex-col mb-12'>
+                    <article id='messageBody' key={chat_state.currRoom} className='text-white max-h-[calc(100vh_-_17vh)] w-full overflow-y-scroll overflow-x-clip p-4 grid justify-items-end mb-12'>
                         {chat_state.rooms.find(room => room.room === chat_state.currRoom)?.messages.map((message, idx) => (
-                            <div className='bg-emerald-800 p-3 pb-4 m-2  rounded-xl border border-black text-left w-fit ml-auto mt-auto'>
-                                <p key={idx} className=''>
+                            <div className='bg-emerald-800 p-4 m-2  rounded-xl border border-black text-left w-fit place-self-end '>
+                                <p key={idx} className='h-fit'>
                                     <em key={idx}>{message.username}:</em> {message.message}
                                     
                                 </p>

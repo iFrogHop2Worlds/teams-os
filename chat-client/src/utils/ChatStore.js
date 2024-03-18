@@ -17,8 +17,7 @@ const reducer = (chat_state, action) => {
 
         case 'DEL_ROOM': {
             const newRooms = chat_state.rooms.filter(room => room.name !== action.payload);
-            console.log(chat_state.rooms[chat_state.rooms.length -1].room)
-            return { ...chat_state, currRoom: chat_state.rooms[chat_state.rooms.length-1].room , rooms: newRooms };
+            return { ...chat_state, rooms: newRooms };
         }
 
         case 'SET_CURRENT_ROOM' : return { ...chat_state, currRoom: action.payload }
