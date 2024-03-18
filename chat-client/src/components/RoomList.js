@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import EditRoom from './EditRoom';
 
-//2do 
+
 export default function RoomList({
   numberOfRooms,
   rooms,
@@ -10,6 +10,7 @@ export default function RoomList({
   setNewRoom,
   addRoom,
   changeRoomOnClickHandler,
+  dispatch
 }) {
   const [editRoomIds, setEditRoomIds] = useState({}); // Track edit state for each room
 
@@ -30,6 +31,7 @@ export default function RoomList({
       <div className="h-[calc(100vh - 30vh)] w-fit overscroll-x-none overflow-y-scroll mb-8">
         <div className="flex flex-col-reverse">
           {rooms?.map((room) => (
+            
             <div key={room.room} className="mb-2">
               <p
                 className={`text-xl text-white  font-extrabold p-1 mb-4 mr-4 float-right -translate-y-24 z-50 cursor-pointer `}
@@ -37,7 +39,7 @@ export default function RoomList({
               >
                 <em className='absolute z-50'>...</em>
               </p>
-              {editRoomIds[room.room] && <EditRoom />}
+              {editRoomIds[room.room] && <EditRoom dispatch={dispatch} />}
               <button
                 key={room.room}
                 onClick={changeRoomOnClickHandler}

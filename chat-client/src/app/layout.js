@@ -2,6 +2,7 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { SessionProvider, useSession } from 'next-auth/react'
+import { ChatStoreProvider } from "@/utils/chatStore";
 import { useRouter } from "next/navigation";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -16,14 +17,16 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <SessionProvider>
-        {children.auth ? ( 
-          <Auth adminOnly={children.auth.adminOnly}>
-            <body className={inter.className}>{children}</body>
-          </Auth>
-          ) : (
-            <body className={inter.className}>{children}</body>
-          )
-        }
+        <ChatStoreProvider>
+          {children.auth ? ( 
+            <Auth adminOnly={children.auth.adminOnly}>
+              <body className={inter.className}>{children}</body>
+            </Auth>
+            ) : (
+              <body className={inter.className}>{children}</body>
+            )
+          }
+        </ChatStoreProvider> 
       </SessionProvider>
     </html>
   );

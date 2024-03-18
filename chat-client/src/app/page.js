@@ -1,11 +1,13 @@
 'use client'
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
+import { ChatStore } from '@/utils/chatStore';
 import { signOut, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { SettingsIcon } from '@/components/SettingsIcon';
 import RoomList from '@/components/RoomList';
 
 function Chat() {
+    const { chat_state, dispatch } = useContext(ChatStore);
     const {status, data: session } = useSession();
     const router = useRouter();
     const [showSettings, setShowSettings] = useState(false);
@@ -13,12 +15,6 @@ function Chat() {
     const [retryStateTime, setRetryStateTime] = useState(1);
     const [newRoom, setNewRoom] = useState('');
     const [message, setMessage] = useState('');
-    const [currRoom, setCurrRoom] = useState('nullRoom');
-    const [state, setState] = useState({
-        rooms: [{ name: currRoom, messages: [{username:"Friends-os", message: "Create or join a room to send a message"}] }],
-        connected: false,
-    });
-  
     const stateRef = useRef(null);
    
     const scrollBottom = () => {
@@ -30,13 +26,12 @@ function Chat() {
     const connect = () => {
 
         if (!stateRef.current) {
-            const stateSource = new EventSource(process.env.NEXT_PUBLIC_API_BASE_URL + '/chat_state/events');
+            const stateSource = new EventSource(process.env.NEXT_PUBLIC_API_BASE_URL + '/chat_state/events'); // Subscribing to server state
 
             stateSource.onmessage = (e) => {
                 try {
                     let _state = JSON.parse(e.data);
-                    const setStates = (update) => setState({ ...state, rooms: update });
-                    setStates(_state.rooms);
+                    dispatch({ type: 'SYNC_SERVER_STATE', payload: _state.rooms });
                 } catch (error) {
                     console.log(error);
                 }
@@ -63,36 +58,32 @@ function Chat() {
     const addRoom = (e) => {
         e.preventDefault();
         if(newRoom != '' && newRoom != undefined){
-            fetch(process.env.NEXT_PUBLIC_API_BASE_URL + '/create_room', {
-            method: 'POST',
-            body: JSON.stringify({ name: newRoom }),
-            })
-
-            if (state.rooms.find(room => room.name === newRoom)) {
+            if (chat_state.rooms.find(room => room.name === newRoom)) {
                 changeRoom(newRoom);
                 return false;
             }
+            fetch(process.env.NEXT_PUBLIC_API_BASE_URL + '/create_room', {
+                method: 'POST',
+                body: JSON.stringify({ name: newRoom }),
+            })
 
-            const newRooms = [...state.rooms, { name: newRoom, messages: [] }];
-            
-            setState({ ...state, rooms: newRooms });
+            dispatch({ type: 'ADD_ROOM', payload: newRoom });  
             changeRoom(newRoom);
             return true;
         }
     };
 
-    const changeRoom = (room) => {  
-        setNewRoom('');    
-        if (state.room === room) return;
-
-        setCurrRoom(room);
+    const changeRoom = (name) => {  
+        //if (chat_state.currRoom === name) return;
+        dispatch({ type: 'SET_CURRENT_ROOM', payload: name });
+        setNewRoom('');
     };
 
     const changeRoomOnClickHandler = (e) => {
         e.preventDefault();
         const name =  e.target.name;
-        if (currRoom === name) return;
-        setCurrRoom(name);
+        if (chat_state.currRoom === name) return;
+        dispatch({ type: 'SET_CURRENT_ROOM', payload: name });
     };
 
     const messageHandler = (e) => {
@@ -100,7 +91,7 @@ function Chat() {
         if (message !== '') {
             fetch(process.env.NEXT_PUBLIC_API_BASE_URL + '/message', {
                 method: 'POST',
-                body: JSON.stringify({ room: currRoom, username: session.user.name, message }),
+                body: JSON.stringify({ room: chat_state.currRoom, username: session.user.name, message }),
             })
             .then( () => {
                 setMessage('')
@@ -112,24 +103,24 @@ function Chat() {
 
     const logoutHandler = () => {
         signOut({ callbackUrl: '/login' });
-      };
+    };
 
     useEffect( () => {
-        if(currRoom == 'nullRoom') {
+        if(chat_state.currRoom == 'nullRoom') {
             fetch(process.env.NEXT_PUBLIC_API_BASE_URL + '/seed')
             .then( seed => {
                 seed.json().then( messages => {
-                    setCurrRoom(messages[messages.length-1].room);
-                    setState({...state, rooms: messages});
+                    dispatch({ type: 'SET_CURRENT_ROOM', payload: messages[messages.length-1].room })
+                    dispatch({ type: 'SYNC_SERVER_STATE', payload: messages });
                 })    
             })
             .catch( error => console.log(error))
         }
-       
+        
         connect()    
         scrollBottom()
 
-    }, [currRoom, state]); 
+    }, [chat_state.currRoom]); 
 
     useEffect(() => {
         if (!session) 
@@ -142,13 +133,14 @@ function Chat() {
         {/* Left column (hidden on mobile) */}
         <div className='lg:col-start-1 lg:col-span-1  border-r border-emerald-600 p-2 m-3 hidden lg:grid w-fit   min-h-[700px]'>
             <RoomList
-                numberOfRooms = {state.rooms.length}
-                rooms = {state.rooms}
+                numberOfRooms = {chat_state.rooms.length}
+                rooms = {chat_state.rooms}
                 newRoom = {newRoom}
                 setNewRoom = {setNewRoom}
                 addRoom = {addRoom}
                 changeRoomOnClickHandler = {changeRoomOnClickHandler}
-                currRoom = {currRoom}
+                currRoom = {chat_state.currRoom}
+                dispatch = {dispatch}
             />
         </div>  
 
@@ -156,8 +148,8 @@ function Chat() {
         <div className=' lg:col-start-2 lg:col-span-3 md:col-start-1 md:col-span-4 lg:ml-10 lg:pl-16 z-40  w-screen md:w-full mx-auto p-1 '>       
             <div className='p-3 min-h-screen'>
             
-                    <article id='messageBody' key={currRoom} className='text-white h-[calc(100vh_-_17vh)] w-full overflow-y-scroll overflow-x-clip p-4 flex flex-col mb-12'>
-                        {state.rooms.find(room => room.room === currRoom)?.messages.map((message, idx) => (
+                    <article id='messageBody' key={chat_state.currRoom} className='text-white h-[calc(100vh_-_17vh)] w-full overflow-y-scroll overflow-x-clip p-4 flex flex-col mb-12'>
+                        {chat_state.rooms.find(room => room.room === chat_state.currRoom)?.messages.map((message, idx) => (
                             <div className='bg-emerald-800 p-3 pb-4 m-2  rounded-xl border border-black text-left w-fit ml-auto mt-auto'>
                                 <p key={idx} className=''>
                                     <em key={idx}>{message.username}:</em> {message.message}
@@ -186,7 +178,7 @@ function Chat() {
             <div className='flex-col flex justify-between  text-center bg-black p-2 m-3 h-2/6 max-h-auto bg-opacity-40 rounded-lg'>
                 <div className='flex justify-end place-items-center p-2'>
                    <div className={`bg-black bg-opacity-30 text-white w-full text-left rounded-md mr-3 p-6  z-40 overscroll-x-none overflow-hidden ${
-                      showSettings ? 'hidden' : ''
+                      !showSettings ? 'hidden' : ''
                     }`}>
                       <button className='bg-slate-700 border text-lg p-2 mt-2 rounded-xl  mr-2  z-50' onClick={logoutHandler}>sign out</button>
                     </div>   
@@ -200,7 +192,7 @@ function Chat() {
                 </p>         
                 <br/>
 
-                <p className='text-sm'><em className='font-semibold '>In Chatroom:</em> <i className='text-cyan-400'>{currRoom}</i></p>  
+                <p className='text-sm'><em className='font-semibold '>In Chatroom:</em> <i className='text-cyan-400'>{chat_state.currRoom}</i></p>  
 
                 
             </div>
