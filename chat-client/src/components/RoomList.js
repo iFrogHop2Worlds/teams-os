@@ -20,7 +20,7 @@ export default function RoomList({
       [roomId]: !prevEditRoomIds[roomId], // Toggle edit state for the clicked room
     }));
   };
-
+ 
   return (
     <>
       <div className="mb-4 font-thin text-white">
@@ -39,7 +39,7 @@ export default function RoomList({
               >
                 <em className=' z-50'>...</em>
               </p>
-              {editRoomIds[room.room] && <EditRoom dispatch={dispatch} />}
+              {editRoomIds[room.room] && <EditRoom dispatch={dispatch} roomId={room.room} toggleEditGroup={toggleEditGroup } />}
               <button
                 key={room.room}
                 onClick={changeRoomOnClickHandler}

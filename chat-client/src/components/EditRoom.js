@@ -1,15 +1,16 @@
 import React, {useState} from 'react'
 
 
-export default function EditRoom({dispatch}) {
+export default function EditRoom({dispatch, roomId, toggleEditGroup}) {
     const [deleteRoom, setDeleteRoom] = useState('');
 
     const deletRoomHandler = (e) => {
         e.preventDefault();
 
         fetch(process.env.NEXT_PUBLIC_API_BASE_URL + '/delete_room/' + deleteRoom, { method: 'DELETE' })
-        dispatch({type: "DEL_ROOM", payload: deleteRoom})
-        setDeleteRoom('')
+        dispatch({type: "DEL_ROOM", payload: deleteRoom});
+        toggleEditGroup(roomId);
+        setDeleteRoom('');
     }
 
     return (

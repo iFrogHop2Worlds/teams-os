@@ -72,7 +72,6 @@ pub fn post(json: Json<Message>, queue: &State<Sender<Message>>, state: &State<A
         println!("Room does not exist");
     }
 
-    // let _res = queue.send(json.into_inner()); // Commented out if not used
     let _res = chat_state_tx.send(chat_state.clone());
 }
 
