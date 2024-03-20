@@ -5,6 +5,7 @@ import { signOut, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { SettingsIcon } from '@/components/SettingsIcon';
 import RoomList from '@/components/RoomList';
+import EmojiPicker from 'emoji-picker-react';
 
 function Chat() {
     const { chat_state, dispatch } = useContext(ChatStore);
@@ -15,12 +16,17 @@ function Chat() {
     const [retryStateTime, setRetryStateTime] = useState(1);
     const [newRoom, setNewRoom] = useState('');
     const [message, setMessage] = useState('');
+    const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+
     const stateRef = useRef(null);
    
     const scrollBottom = () => {
         let chatScreen = document.getElementById("messageBody");
         let height = chatScreen.scrollHeight;
         chatScreen.scrollTo(0, height);
+    }
+    const logoutHandler = () => {
+        signOut({ callbackUrl: '/login' });
     }
  
     const connect = () => {
@@ -102,9 +108,15 @@ function Chat() {
         
     };
 
-    const logoutHandler = () => {
-        signOut({ callbackUrl: '/login' });
+    const handleEmojiClick = (emoji) => {
+        console.log(emoji)
+        setMessage((prevMessage) => prevMessage + emoji.emoji);
     };
+
+    const toggleEmojis = (e) => {
+        e.preventDefault();
+        setIsEmojiPickerOpen(!isEmojiPickerOpen);
+    }
 
     useEffect( () => {
         if(chat_state.currRoom == 'nullRoom') {
@@ -121,7 +133,7 @@ function Chat() {
         connect()    
         scrollBottom()
 
-    }, [chat_state.currRoom, chat_state]); 
+    }, []); 
 
     useEffect(() => {
         if (!session) 
@@ -163,13 +175,20 @@ function Chat() {
                 
                 <div className='lg:hidden mb-3 -translate-x-8 flex justify-between'>
                     <button className='p-5 m-2 bg-slate-600 rounded-md text-sm inline-block lg:hidden '>Chats</button>  
+                    
                     <SettingsIcon /> 
                 </div>
+                
                 <div className='flex justify-between -translate-x-8'>
-                    <form className='flex mb-2 text-white w-full'>
-                        <input className='text-black w-10/12 lg:ml-12  m-2 p-3' type="text" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Message" />
-                        <button className='p-5 m-2 bg-emerald-600 rounded-md text-sm' onClick={(e) => messageHandler(e)}>Send</button>
-                       
+                    <form className='flex-col mb-2 text-white w-full'>
+                        <EmojiPicker open={isEmojiPickerOpen} onEmojiClick={handleEmojiClick} lazyLoadEmojis={true} height={380}/>
+                        <button className='p-2 text-black text-sm border border-black m-2 bg-yellow-400 rounded-md float-right' onClick={(e) => toggleEmojis(e)}>
+                            Emojis
+                        </button>
+                        <div className='flex'>
+                            <input className='text-black w-10/12 lg:ml-12  m-2 p-3' type="text" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Message" />
+                            <button className='p-5 m-2 bg-emerald-600 rounded-md text-sm float-right' onClick={(e) => messageHandler(e)}>Send</button>
+                        </div>
                     </form>
                 </div>
             </div>
