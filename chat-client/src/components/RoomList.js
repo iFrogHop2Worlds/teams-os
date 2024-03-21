@@ -1,4 +1,5 @@
 import React, { useState, useContext } from 'react';
+import { useRouter } from 'next/navigation';
 import { ChatStore } from '@/utils/chatStore';
 import EditRoom from './EditRoom';
 
@@ -7,6 +8,7 @@ export default function RoomList() {
   const [newRoom, setNewRoom] = useState('');
   const { chat_state, dispatch } = useContext(ChatStore);
   const {currRoom, rooms } = chat_state;
+  const router = useRouter();
 
   const toggleEditGroup = (roomId) => {
     setEditRoomIds((prevEditRoomIds) => ({
@@ -43,6 +45,7 @@ const changeRoomOnClickHandler = (e) => {
   const name =  e.target.name;
   if (chat_state.currRoom === name) return;
   dispatch({ type: 'SET_CURRENT_ROOM', payload: name });
+  router.push('/')
 };
  
   return (
@@ -58,7 +61,7 @@ const changeRoomOnClickHandler = (e) => {
             
             <div key={room.room} className="mb-2">
               <p
-                className={`text-xl text-white  font-extrabold p-1 mb-4 mr-4 float-right -translate-y-24 z-50 cursor-pointer `}
+                className={`text-xl text-emerald-600  font-extrabold p-1 mb-4  mr-4 float-right -translate-y-24 z-50 cursor-pointer `}
                 onClick={() => toggleEditGroup(room.room)}
               >
                 <em className=' z-50'>...</em>

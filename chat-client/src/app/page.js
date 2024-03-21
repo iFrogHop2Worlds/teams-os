@@ -3,9 +3,11 @@ import React, { useState, useEffect, useRef, useContext } from 'react';
 import { ChatStore } from '@/utils/chatStore';
 import { signOut, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { SettingsIcon } from '@/components/SettingsIcon';
 import RoomList from '@/components/RoomList';
 import EmojiPicker from 'emoji-picker-react';
+import { EmojisBarIcon } from '@/components/EmojiIcon';
 
 function Chat() {
     const { chat_state, dispatch } = useContext(ChatStore);
@@ -73,6 +75,10 @@ function Chat() {
             })
             .catch( error => console.log(error))
         }
+
+        if(isEmojiPickerOpen) {
+            setIsEmojiPickerOpen(false);
+        }
         
     };
 
@@ -119,7 +125,9 @@ function Chat() {
         {/* Right column */}
         <div className=' lg:col-start-2 lg:col-span-3 md:col-start-1 md:col-span-4 lg:ml-10 lg:pl-16 z-40  w-screen md:w-full mx-auto p-1 '>       
             <div className='p-3 min-h-screen flex flex-col place-content-end'>
-            
+                    <section className=' text-center text-lg font-semibold bg-black bg-opacity-40 rounded-xl mx-auto p-3'>
+                        <p className='text-white'><em className=''>In Chatroom:</em> <i className='text-cyan-400'>{chat_state.currRoom}</i></p>
+                    </section>
                     <article id='messageBody' key={chat_state.currRoom} className='text-white max-h-[calc(100vh_-_17vh)] w-full overflow-y-scroll overflow-x-clip p-4 grid justify-items-end mb-12'>
                         {chat_state.rooms.find(room => room.room === chat_state.currRoom)?.messages.map((message, idx) => (
                             <div className='bg-emerald-800 p-4 m-2  rounded-xl border border-black text-left w-fit place-self-end '>
@@ -133,21 +141,22 @@ function Chat() {
               
                 
                 <div className='lg:hidden mb-3 -translate-x-8 flex justify-between'>
-                    <button className='p-5 m-2 bg-slate-600 rounded-md text-sm inline-block lg:hidden '>Chats</button>  
+                    <Link href="/mobile_chat_list">
+                        <button className='p-5 m-2 bg-slate-600 rounded-md text-sm inline-block lg:hidden '>Chats</button>
+                    </Link>
+                      
                     <SettingsIcon /> 
                 </div>
                 
-                <div className='flex justify-between -translate-x-8'>
+                <div className='flex justify-between place-items-center -translate-x-8 w-full'>
                     <form className='flex-col mb-2 text-white w-full'>
-                        <EmojiPicker open={isEmojiPickerOpen} onEmojiClick={handleEmojiClick} lazyLoadEmojis={true} height={380}/>
-                        <button className='p-2 text-black text-sm border border-black m-2 bg-yellow-400 rounded-md float-right' onClick={(e) => toggleEmojis(e)}>
-                            Emojis
-                        </button>
+                        <EmojiPicker open={isEmojiPickerOpen} onEmojiClick={handleEmojiClick} lazyLoadEmojis={true} height={380} width={300}/>
                         <div className='flex'>
                             <input className='text-black w-10/12 lg:ml-12  m-2 p-3' type="text" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Message" />
                             <button className='p-5 m-2 bg-emerald-600 rounded-md text-sm float-right' onClick={(e) => messageHandler(e)}>Send</button>
                         </div>
                     </form>
+                    <div className='mb-6 place-self-end' onClick={(e) => toggleEmojis(e)}><EmojisBarIcon  /></div>
                 </div>
             </div>S
         </div>
@@ -170,9 +179,6 @@ function Chat() {
                 </p>         
                 <br/>
 
-                <p className='text-sm'><em className='font-semibold '>In Chatroom:</em> <i className='text-cyan-400'>{chat_state.currRoom}</i></p>  
-
-                
             </div>
 
             <div className='flex-col flex justify-around  text-center bg-black p-2 m-3 h-full bg-opacity-40 rounded-lg '>
