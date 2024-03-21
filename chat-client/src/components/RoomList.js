@@ -1,32 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
+import { ChatStore } from '@/utils/chatStore';
 import EditRoom from './EditRoom';
 
-
-export default function RoomList({
-  numberOfRooms,
-  rooms,
-  currRoom,
-  newRoom,
-  setNewRoom,
-  addRoom,
-  changeRoomOnClickHandler,
-  dispatch
-}) {
+export default function RoomList() {
   const [editRoomIds, setEditRoomIds] = useState({}); // Track edit state for each room
+  const [newRoom, setNewRoom] = useState('');
+  const { chat_state, dispatch } = useContext(ChatStore);
+  const {currRoom, rooms } = chat_state;
 
   const toggleEditGroup = (roomId) => {
     setEditRoomIds((prevEditRoomIds) => ({
       ...prevEditRoomIds,
-      [roomId]: !prevEditRoomIds[roomId], // Toggle edit state for the clicked room
+      [roomId]: !prevEditRoomIds[roomId], 
     }));
   };
+
+  const addRoom = (e) => {
+    e.preventDefault();
+    if(newRoom != '' && newRoom != undefined){
+        if (rooms.find(room => room.name === newRoom)) {
+            changeRoom(newRoom);
+            return false;
+        }
+        fetch(process.env.NEXT_PUBLIC_API_BASE_URL + '/create_room', {
+            method: 'POST',
+            body: JSON.stringify({ name: newRoom }),
+        })
+
+        dispatch({ type: 'ADD_ROOM', payload: newRoom });  
+        changeRoom(newRoom);
+        return true;
+    }
+};
+const changeRoom = (name) => {  
+  //if (chat_state.currRoom === name) return;
+  dispatch({ type: 'SET_CURRENT_ROOM', payload: name });
+  setNewRoom('');
+};
+
+const changeRoomOnClickHandler = (e) => {
+  e.preventDefault();
+  const name =  e.target.name;
+  if (chat_state.currRoom === name) return;
+  dispatch({ type: 'SET_CURRENT_ROOM', payload: name });
+};
  
   return (
     <>
       <div className="mb-4 font-thin text-white">
         <p className="text-gray-500 text-4xl mb-4">{process.env.NEXT_PUBLIC_SERVER_NAME}</p>
         <p className="text-orange-400 text-4xl mb-4">chat server</p>
-        {numberOfRooms} chat rooms
+        {rooms.length} chat rooms
       </div>
       <div className="h-[calc(100vh - 30vh)] w-fit overscroll-x-none overflow-y-scroll mb-8">
         <div className="flex flex-col-reverse">

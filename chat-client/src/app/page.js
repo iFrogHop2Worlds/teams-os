@@ -14,7 +14,6 @@ function Chat() {
     const [showSettings, setShowSettings] = useState(false);
     const [connectedStatus, setConnectedStatus] = useState(false);
     const [retryStateTime, setRetryStateTime] = useState(1);
-    const [newRoom, setNewRoom] = useState('');
     const [message, setMessage] = useState('');
     const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
 
@@ -61,37 +60,6 @@ function Chat() {
         }
         
     }
-
-    const addRoom = (e) => {
-        e.preventDefault();
-        if(newRoom != '' && newRoom != undefined){
-            if (chat_state.rooms.find(room => room.name === newRoom)) {
-                changeRoom(newRoom);
-                return false;
-            }
-            fetch(process.env.NEXT_PUBLIC_API_BASE_URL + '/create_room', {
-                method: 'POST',
-                body: JSON.stringify({ name: newRoom }),
-            })
-
-            dispatch({ type: 'ADD_ROOM', payload: newRoom });  
-            changeRoom(newRoom);
-            return true;
-        }
-    };
-
-    const changeRoom = (name) => {  
-        //if (chat_state.currRoom === name) return;
-        dispatch({ type: 'SET_CURRENT_ROOM', payload: name });
-        setNewRoom('');
-    };
-
-    const changeRoomOnClickHandler = (e) => {
-        e.preventDefault();
-        const name =  e.target.name;
-        if (chat_state.currRoom === name) return;
-        dispatch({ type: 'SET_CURRENT_ROOM', payload: name });
-    };
 
     const messageHandler = (e) => {
         e.preventDefault();
@@ -145,16 +113,7 @@ function Chat() {
     <div className={'grid gap-16 md:grid-cols-6 bg-slate-700 border border-cyan-400 m-1 rounded-lg bg-opacity-80 p-4 overflow-y-scroll h-[calc(100vh_-_1vh)] ' + (status === "authenticated" ? 'inline-block' : 'hidden')}>
         {/* Left column (hidden on mobile) */}
         <div className='lg:col-start-1 lg:col-span-1  border-r border-emerald-600 p-2 m-3 hidden lg:grid w-fit   min-h-[700px]'>
-            <RoomList
-                numberOfRooms = {chat_state.rooms.length}
-                rooms = {chat_state.rooms}
-                newRoom = {newRoom}
-                setNewRoom = {setNewRoom}
-                addRoom = {addRoom}
-                changeRoomOnClickHandler = {changeRoomOnClickHandler}
-                currRoom = {chat_state.currRoom}
-                dispatch = {dispatch}
-            />
+            <RoomList />
         </div>  
 
         {/* Right column */}
@@ -175,7 +134,6 @@ function Chat() {
                 
                 <div className='lg:hidden mb-3 -translate-x-8 flex justify-between'>
                     <button className='p-5 m-2 bg-slate-600 rounded-md text-sm inline-block lg:hidden '>Chats</button>  
-                    
                     <SettingsIcon /> 
                 </div>
                 
@@ -191,7 +149,7 @@ function Chat() {
                         </div>
                     </form>
                 </div>
-            </div>
+            </div>S
         </div>
         {/*  Side menu  Large Screen*/}
         <div className='md:col-start-5 md:col-span-2 text-white md:flex flex-col justify-between hidden  ml-4'>
