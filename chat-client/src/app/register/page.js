@@ -1,5 +1,5 @@
 'use client'
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import { signIn, useSession } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
 import { getError } from '../../utils/error';
@@ -8,7 +8,7 @@ import axios from 'axios';
 import { useRouter } from 'next/navigation';
 
 export default function LoginScreen() {
-
+  //const [inviteCode, setInviteCode] = useState('');
   const { data: session } = useSession();
 
   const router = useRouter();
@@ -28,24 +28,29 @@ export default function LoginScreen() {
     formState: { errors },
   } = useForm();
   
-  const submitHandler = async ({ name, password }) => {
-    try {
-      await axios.post('/api/auth/signup', {
-        name,
-        password,
-      });
-
-      const result = await signIn('credentials', {
-        redirect: true,
-        name,
-        password,
-      });
-      if (result.error) {
-        toast.error(result.error);
+  const submitHandler = async ({ name, password, invitecode }) => {
+    if(invitecode === process.env.NEXT_PUBLIC_INVITE_CODE){
+      try {
+        await axios.post('/api/auth/signup', {
+          name,
+          password,
+        });
+  
+        const result = await signIn('credentials', {
+          redirect: true,
+          name,
+          password,
+        });
+        if (result.error) {
+          toast.error(result.error);
+        }
+      } catch (err) {
+        toast.error(getError(err));
       }
-    } catch (err) {
-      toast.error(getError(err));
+    } else {
+      window.alert("Sorry you need to be invited to use this service.")
     }
+    
   };
   return (
       <form
@@ -53,6 +58,22 @@ export default function LoginScreen() {
         onSubmit={handleSubmit(submitHandler)}
       >
         <p className="mb-4 text-xl">Create Account</p>
+
+        <div className="mb-4">
+          <label htmlFor="invitecode">invite code</label>
+          <input
+            type="text"
+            className="w-full text-black bg-blue-200"
+            id="invitecode"
+            autoFocus
+            {...register('invitecode', {
+              required: 'Please enter a valid invite code',
+            })}
+          />
+          {errors.invitecode && (
+            <div className="text-red-500">{errors.invitecode.message}</div>
+          )}
+        </div>
         <div className="mb-4">
           <label htmlFor="name">name</label>
           <input

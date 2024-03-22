@@ -20,9 +20,8 @@ export default function EditRoom({dispatch, roomId, toggleEditGroup}) {
             method: 'POST',
             body: JSON.stringify({ old_name: roomId, new_name: newRoomName }),
         })
-        dispatch({type: "DEL_ROOM", payload: deleteRoom});
         toggleEditGroup(roomId);
-        setDeleteRoom('');
+        setNewRoomName('');
     }
 
     return (
