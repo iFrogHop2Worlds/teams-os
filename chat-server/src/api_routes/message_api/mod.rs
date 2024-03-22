@@ -106,6 +106,36 @@ pub fn create_new_room(room_data: Json<CreateRoomData>, state: &State<Arc<Mutex<
     Some(Json(new_room))
 }
 
+#[derive(Deserialize)]
+struct UpdateRoom {
+    old_name: String,
+    new_name: String,
+}
+#[post("/update_room", data = "<room_data>")]
+pub fn update_room(room_data: Json<UpdateRoom>, state: &State<Arc<Mutex<ChatState>>>, chat_state_tx: &State<Sender<ChatState>>) -> Option<Json<Room>> {
+    let mut chat_state = state.lock().unwrap();
+
+    let room_index = chat_state.rooms.iter().position(|room| room.room == room_data.old_name);
+
+    match room_index {
+        Some(index) => {
+            let mut room = chat_state.rooms.remove(index);
+            room.room = room_data.new_name.clone();
+            chat_state.rooms.push(room.clone());
+
+            println!("Room '{}' updated to '{}' successfully", room_data.old_name, room_data.new_name);
+
+            let _res = chat_state_tx.send(chat_state.clone()); // Broadcast updated state
+            Some(Json(room))
+        },
+        None => {
+            println!("Room with name '{}' not found", room_data.old_name);
+            None
+        }
+    }
+}
+
+
 #[delete("/delete_room/<room_name>")]
 pub fn delete_room(room_name: String, state: &State<Arc<Mutex<ChatState>>>, chat_state_tx: &State<Sender<ChatState>>) -> Option<Json<()>> {
     let mut chat_state = state.lock().unwrap();

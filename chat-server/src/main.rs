@@ -8,6 +8,7 @@ use crate::api_routes::message_api;
 pub fn all() -> Vec<rocket::Route> {
     routes![
         message_api::create_new_room,
+        message_api::update_room,
         message_api::delete_room,
         message_api::events,
         message_api::post,
