@@ -1,10 +1,12 @@
 #[macro_use] extern crate rocket;
+
+use bson::oid::ObjectId;
+use crate::chat_state_dao::MongoDB;
+use rocket::State;
 pub mod lib;
-pub mod api_routes;
 use lib::*;
-pub mod chat;
-use crate::chat::*;
-use crate::api_routes::message_api;
+use crate::lib::chat::ChatState;
+
 pub fn all() -> Vec<rocket::Route> {
     routes![
         message_api::create_new_room,
@@ -15,13 +17,16 @@ pub fn all() -> Vec<rocket::Route> {
         message_api::get_room_messages,
         message_api::get_chat_state,
         message_api::seed,
+        message_api::test
     ]
 }
 
 #[rocket::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    let db = MongoDB::init();
 
     let chat_state = Arc::new(Mutex::new(ChatState {
+        _id: ObjectId::new(),
         rooms: vec![Room{room: "lobby".to_string(), messages: Vec::new()}],
     }));
 
@@ -38,6 +43,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let _ = rocket::build()
         .manage(chat_state.clone())
+        .manage(db)
         .manage(channel::<Message>(1024).0)
         .manage(channel::<ChatState>(1024).0)
         .mount("/", all())

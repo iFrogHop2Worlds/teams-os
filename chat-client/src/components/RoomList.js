@@ -61,7 +61,7 @@ const changeRoomOnClickHandler = (e) => {
             
             <div key={room.room} className="mb-2">
               <p
-                className={`text-4xl absolute text-white  font-extrabold p-1 mb-4 float-right -translate-y-24  w-12 h-12 z-50 cursor-pointer `}
+                className={`text-4xl relative text-white  font-extrabold p-1 mb-4  w-12 h-12 z-50 translate-y-12 cursor-pointer `}
                 onClick={() => toggleEditGroup(room.room)}
               >
                 <em className=''>...</em>

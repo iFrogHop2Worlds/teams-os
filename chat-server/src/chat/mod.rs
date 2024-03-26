@@ -1,7 +1,10 @@
+use bson::{doc, document};
+use rocket::FromForm;
 use rocket::serde::{Deserialize, Serialize};
-
-#[derive(Debug, Clone, Serialize)]
+use mongodb::bson::oid::ObjectId;
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChatState {
+    pub _id: ObjectId,
     pub rooms: Vec<Room>,
 }
 

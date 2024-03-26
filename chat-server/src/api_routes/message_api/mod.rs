@@ -1,23 +1,16 @@
 use std::sync::{Arc, Mutex};
+use bson::doc;
+use mongodb::results::InsertOneResult;
 pub use rocket::response::stream::{EventStream, Event};
-pub use rocket::{State, Shutdown};
+pub use rocket::{State, Shutdown, delete, post, get};
+use rocket::http::Status;
 use rocket::serde::Deserialize;
 use rocket::serde::json::Json;
 use crate::chat::{ChatState, Message, Room};
 pub use rocket::tokio::sync::broadcast::{channel, Sender, error::RecvError};
 pub use rocket::tokio::select;
+use crate::chat_state_dao::MongoDB;
 
-/**
-    There are 3 primary endpoints which make chat functional. We have two Steams
-    /events is dedicated to messages and /chat_state/events is dedicated to updating
-    state across clients.
-
-    we have some convenience and utility endpoints. Seed is called when a client connects
-    with no state.
-**/
-
-/// Returns an infinite stream of server-sent events. Each event is a message
-/// pulled from a broadcast queue sent by the `post` handler.
 #[get("/events")]
 pub async fn events(queue: &State<Sender<Message>>, mut end: Shutdown) -> EventStream![] {
     let mut rx = queue.subscribe();
@@ -165,5 +158,16 @@ pub fn seed(state: &State<Arc<Mutex<ChatState>>>) -> Option<Json<Vec<Room>>> {
     Some(Json(chat_state.rooms.clone()))
 }
 
+//testing chatstate dao
+#[get("/test")]
+pub async fn test( db: &State<MongoDB>, state: &State<Arc<Mutex<ChatState>>>) -> Result<Json<InsertOneResult>, Status> {
+    let data = state.lock().unwrap().clone();
 
+    let saved_chat = db.save_new(data);
+
+    match saved_chat {
+        Ok(user) => Ok(Json(user)),
+        Err(_) => Err(Status::InternalServerError),
+    }
+}
 

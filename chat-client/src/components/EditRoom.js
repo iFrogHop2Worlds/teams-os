@@ -25,7 +25,7 @@ export default function EditRoom({dispatch, roomId, toggleEditGroup}) {
     }
 
     return (
-    <div className='bg-black p-3 z-30 translate-y-2 rounded-t-lg m-1'>
+    <div className='bg-black p-4 border-l-2 border-cyan-300 translate-y-2 translate-x-1 rounded-t-lg  '>
     <form className='grid '>
         <div className='flex justify-between'>
             <input className='m-2 p-3' type="text" value={newRoomName} onChange={(e) => setNewRoomName(e.target.value)} placeholder="new name" />
