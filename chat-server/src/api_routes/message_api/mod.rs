@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 use bson::doc;
 use mongodb::results::InsertOneResult;
 pub use rocket::response::stream::{EventStream, Event};
-pub use rocket::{State, Shutdown, delete, post, get};
+pub use rocket::{State, Shutdown, delete, post, get, put};
 use rocket::http::Status;
 use rocket::serde::Deserialize;
 use rocket::serde::json::Json;
@@ -159,14 +159,54 @@ pub fn seed(state: &State<Arc<Mutex<ChatState>>>) -> Option<Json<Vec<Room>>> {
 }
 
 //testing chatstate dao
-#[get("/test")]
-pub async fn test( db: &State<MongoDB>, state: &State<Arc<Mutex<ChatState>>>) -> Result<Json<InsertOneResult>, Status> {
+#[get("/test/save")]
+pub async fn save_state_db( db: &State<MongoDB>, state: &State<Arc<Mutex<ChatState>>>) -> Result<Json<InsertOneResult>, Status> {
     let data = state.lock().unwrap().clone();
 
     let saved_chat = db.save_new(data);
 
     match saved_chat {
         Ok(user) => Ok(Json(user)),
+        Err(_) => Err(Status::InternalServerError),
+    }
+}
+
+#[get("/test/get/<path>")]
+pub async fn get_state_db( db: &State<MongoDB>, state: &State<Arc<Mutex<ChatState>>>, path: String) -> Result<Json<ChatState>, Status> {
+    let id = path;
+    if id.is_empty() {
+        return Err(Status::BadRequest);
+    };
+    let chat_state = db.get_saved_chats(&id);
+
+    match chat_state {
+        Ok(chats) => Ok(Json(chats)),
+        Err(_) => Err(Status::InternalServerError),
+    }
+}
+
+#[put("/test/update/<path>")]
+pub async fn update_state_db( db: &State<MongoDB>, state: &State<Arc<Mutex<ChatState>>>, path: String) -> Result<Json<ChatState>, Status> {
+    let id = path;
+    if id.is_empty() {
+        return Err(Status::BadRequest);
+    };
+
+    let chat_state = state.lock().unwrap().clone();
+    let update_result = db.update_saved_chats(&id, chat_state);
+
+    match update_result {
+        Ok(update) => {
+            return if update.matched_count == 1 {
+                let updated_chat_info = db.get_saved_chats(&id);
+                match updated_chat_info {
+                    Ok(chat) => Ok(Json(chat)),
+                    Err(_) => Err(Status::InternalServerError),
+                }
+            } else {
+                Err(Status::NotFound)
+            }
+        }
         Err(_) => Err(Status::InternalServerError),
     }
 }

@@ -1,17 +1,13 @@
-use bson::{doc, document};
+use bson::{Bson, doc, document};
 use rocket::FromForm;
 use rocket::serde::{Deserialize, Serialize};
 use mongodb::bson::oid::ObjectId;
+use crate::chat;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChatState {
     pub _id: ObjectId,
     pub rooms: Vec<Room>,
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct Room {
-    pub room: String,
-    pub messages: Vec<Message>,
 }
 
 impl ChatState {
@@ -27,6 +23,11 @@ impl ChatState {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Room {
+    pub room: String,
+    pub messages: Vec<Message>,
+}
 
 #[derive(Debug, Clone, FromForm, Serialize, Deserialize)]
 #[cfg_attr(test, derive(PartialEq, UriDisplayQuery))]
@@ -37,4 +38,39 @@ pub struct Message {
     #[field(validate = len(..20))]
     pub username: String,
     pub message: String,
+}
+
+impl From<ChatState> for Bson {
+    fn from(chat_state: ChatState) -> Self {
+        let doc = doc! {
+            "_id": chat_state._id,
+            "rooms": chat_state.rooms.iter().map(|value: &Room| Room::from(value.clone())).collect::<Vec<_>>()
+        };
+        Bson::Document(doc)
+    }
+}
+
+impl From<Room> for Bson {
+    fn from(room: Room) -> Self {
+        let doc = doc! {
+            "room": room.room,
+            "messages": room.messages.iter().map(|value: &Message| Message::from(value.clone())).collect::<Vec<_>>()
+        };
+        Bson::Document(doc)
+    }
+}
+
+impl From<Message> for Bson {
+    fn from(message: Message) -> Self {
+        let doc = doc! {
+            "room": message.room,
+            "username": message.username,
+            "message": message.message
+        };
+        Bson::Document(doc)
+    }
+}
+
+pub fn to_bson_doc(chat_state: &ChatState) -> Bson {
+    chat_state.clone().into()
 }

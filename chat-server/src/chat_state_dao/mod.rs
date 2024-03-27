@@ -2,6 +2,7 @@ use std::env;
 extern crate dotenv;
 use dotenv::dotenv;
 use mongodb::{bson::{doc, extjson::de::Error, oid::ObjectId}, sync::{Client, Collection}, results::{InsertOneResult, UpdateResult, DeleteResult}};
+use rocket::serde::{Deserialize, Serialize};
 use crate::chat::ChatState;
 
 pub struct MongoDB {
@@ -38,12 +39,12 @@ impl MongoDB {
     pub fn get_saved_chats(&self, id: &String) -> Result<ChatState, Error> {
         let obj_id = ObjectId::parse_str(id).unwrap();
         let filter = doc! {"_id": obj_id};
-        let user_detail = self
+        let chat_state = self
             .col
             .find_one(filter, None)
             .ok()
             .expect("Error getting chat detail");
-        Ok(user_detail.unwrap())
+        Ok(chat_state.unwrap())
     }
 
     pub fn update_saved_chats(&self, id: &String, new: ChatState) -> Result<UpdateResult, Error> {
@@ -87,3 +88,4 @@ impl MongoDB {
         Ok(saved_states)
     }
 }
+
