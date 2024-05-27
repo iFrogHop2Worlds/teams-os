@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rocket = { version = "0.5.0", features = ["json"] }
+rocket = { version = "0.5.1", features = ["json"] }
 rocket_contrib = "0.4.11"
 rocket_cors = { version = "0.6.0", default-features = false }
 ws = { package = "rocket_ws", version = "0.1.0" }
@@ -15,7 +15,7 @@ dotenv = "0.15"
 serde = "1.0.197"
 rand = "0.8.5"
 num_threads = "0.1.7"
-tokio = "1.36.0"
+tokio = "1.37.0"
 chrono = "0.4.35"
 
 [dependencies.mongodb]
