@@ -2,7 +2,6 @@ use std::env;
 extern crate dotenv;
 use dotenv::dotenv;
 use mongodb::{bson::{doc, extjson::de::Error, oid::ObjectId}, sync::{Client, Collection}, results::{InsertOneResult, UpdateResult, DeleteResult}};
-use rocket::serde::{Deserialize, Serialize};
 use crate::chat::ChatState;
 
 pub struct MongoDB {

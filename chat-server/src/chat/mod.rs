@@ -1,8 +1,7 @@
-use bson::{Bson, doc, document};
+use bson::{Bson, doc};
 use rocket::FromForm;
 use rocket::serde::{Deserialize, Serialize};
 use mongodb::bson::oid::ObjectId;
-use crate::chat;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChatState {
@@ -17,7 +16,7 @@ impl ChatState {
             .map(|room| &room.messages)
     }
 
-    pub fn update_room(&mut self, room_name: &str) -> bool {
+    pub fn update_room(&mut self) -> bool {
        // self.room
         true
     }

@@ -54,7 +54,7 @@ pub fn get_chat_state(chat_state_tx: &State<Sender<ChatState>>, mut end: Shutdow
 /// Update App State
 /// and broadcast to receivers.
 #[post("/message", data = "<json>")]
-pub fn post(json: Json<Message>, queue: &State<Sender<Message>>, state: &State<Arc<Mutex<ChatState>>>, chat_state_tx: &State<Sender<ChatState>>) {
+pub fn post(json: Json<Message>, state: &State<Arc<Mutex<ChatState>>>, chat_state_tx: &State<Sender<ChatState>>) {
     let mut chat_state = state.lock().unwrap();
 
     if let Some(room_index) = chat_state.rooms.iter().position(|room| room.room == json.room) {
@@ -172,7 +172,7 @@ pub async fn save_state_db( db: &State<MongoDB>, state: &State<Arc<Mutex<ChatSta
 }
 
 #[get("/test/get/<path>")]
-pub async fn get_state_db( db: &State<MongoDB>, state: &State<Arc<Mutex<ChatState>>>, path: String) -> Result<Json<ChatState>, Status> {
+pub async fn get_state_db( db: &State<MongoDB>, path: String) -> Result<Json<ChatState>, Status> {
     let id = path;
     if id.is_empty() {
         return Err(Status::BadRequest);
