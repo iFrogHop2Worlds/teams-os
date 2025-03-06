@@ -1,4 +1,6 @@
-### Friends Os
+
+
+### Friends Os (This project will be rebranded soon)
 
 A real time messaging service anyone can host themself. Code is opensource and free to use. Feel free to raise issues, make pr's.
 
